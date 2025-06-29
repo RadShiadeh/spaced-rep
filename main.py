@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import json
 from typing import Optional
 
-
 SEEN_PATH = "./data/seen.json"
 REVISIONS_PATH = "./data/revisions.json"
 
@@ -19,7 +18,7 @@ def read_data(path: str):
 def write_data(data, path: str):
     with open(path, 'w') as f:
         json.dump(data, f, indent=4)
-        
+
 
 def grab_todays_revision_list():
     """
