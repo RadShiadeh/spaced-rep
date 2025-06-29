@@ -4,24 +4,13 @@ A lightweight CLI-based system to manage your study or review topics using a spa
 
 ---
 
-## 📁 Project Structure
-
-project/
-├── main.py
-├── data/
-│ ├── seen.json # Stores review history and topic metadata
-│ └── revisions.json # Stores revision schedules
-
-
----
-
 ## ✅ Features
 
-- Add new study/review topics with optional URLs
-- Automatically generate a revision schedule using spaced repetition
-- Reset or update topics (e.g., if reviewed early or poorly understood)
-- View today's revision list with helpful metadata
-- Persist all state in simple, readable JSON files
+- Add new study/review topics with optional URLs  
+- Automatically generate a revision schedule using spaced repetition  
+- Reset or update topics (e.g., if reviewed early or poorly understood)  
+- View today's revision list with helpful metadata  
+- Persist all state in simple, readable JSON files  
 
 ---
 
@@ -29,117 +18,34 @@ project/
 
 Each topic follows a power-of-2 spaced interval system:
 
-Day 0 → Day +1 → +2 → +4 → +8 → +16 → ... → +256
-
+- Day 0 → +1 → +2 → +4 → +8 → +16 → ...
 
 If you review early or feel less confident, you can **reset** the topic to an earlier stage.
 
 ---
 
-## Future Work
-
-We plan to enhance this project by migrating from local JSON storage to a more scalable and robust database system:
-
-1. **Phase 1: Migrate JSON data to PostgreSQL**  
-   Convert existing `seen.json` and `revisions.json` data into PostgreSQL tables to enable better data integrity, querying, and concurrent access.
-
-2. **Phase 2: Develop a new Java application to interface with PostgreSQL**  
-   Build a separate Java-based service that interacts with the PostgreSQL database to manage revision schedules, allowing for more advanced backend capabilities and integrations.
-
-3. **Phase 3 (Optional): Refactor the existing Python code to use PostgreSQL**  
-   Modify the Python codebase to replace JSON file operations with database queries, or alternatively keep the Python code using JSON alongside the new Java app.
-
-This phased approach will provide a smooth transition path from local JSON files to a scalable, multi-language backend system.
-
----
-
-## ⚙️ Functions
-
-### `add_new_topic(topic, date, url=None)`
-
-Adds a brand-new topic to `seen.json` and schedules reviews starting from `date`.
-
-- `topic`: Name of the concept/page/topic.
-- `date`: Review date (format: `YYYY-MM-DD`).
-- `url`: Optional reference link.
-
----
-
-### `update_entry(topic, date=None, reset_rate=0)`
-
-Update an **existing** topic (e.g., after a review):
-
-- `reset_rate`: From `0` (restart schedule) to `8` (only future reviews).
-- Automatically adjusts both `seen.json` and `revisions.json`.
-
----
-
-### `grab_todays_revision_list()`
-
-Prints all topics scheduled for **today** based on the current date.  
-Includes last reviewed date and URL (if available).
-
----
-
-### `remove_topic_from_revs(topic, date)`
-
-Remove a topic from all future scheduled revisions starting from `date`.
-
----
-
-### `update_revision(topic, date, reset_idx=0)`
-
-Manually update the spaced repetition schedule for a topic.
-
----
-
-### `build_space_rep(topic, date, reset_rate=0)`
-
-Internal function to generate a spaced repetition plan.  
-Used by `add_new_topic()` and `update_revision()`.
-
----
-
-## 📦 Dependencies
-
+## Dependencies
 - Python 3.7+
-- Standard Library only (no external packages)
+- Only standard library (no external packages required)
 
----
 
-## 🚀 How to Use
+## Future Work and Architecture Evolution
 
-```python
-# Add a new topic
-add_new_topic("linked lists", "2025-06-28", url="https://example.com/linked-lists")
+I plan to migrate from local csv storage to a multi-service backend system. The future architecture will separate responsibilities across different clients and services. (learning)
 
-# Update an existing topic (e.g., after reviewing)
-update_entry("linked lists", reset_rate=2)
+### Planned Flow
 
-# View what to revise today
-grab_todays_revision_list()
-```
-## 📚 Data Format
-- seen.json:
-    ```{
-    "linked lists": ["2025-06-28", 2, "https://example.com/linked-lists"]
-    }
-    ```
-- revisions.json:
-```    {
-  "2025-06-29": ["linked lists"],
-  "2025-07-01": ["linked lists"],
-  ...
-}```
+1. **Java Backend Service**  
+   - Handles all reads and writes to a PostgreSQL database  
+   - Exposes a REST API to serve revision data and accept updates
 
----
+2. **Python Spaced Repetition Client**  
+   - Requests topic revision data from the Java API
+   - Loads data into Polars for efficient manipulation and business logic application  
+   - Sends updated revision data back to the Java API for database update
 
-## 📌 Notes
-Ensure both seen.json and revisions.json are initialized as empty JSON files ({}) before first run.
+**Example flow**
+   - Python requests topic revisions from Java API → Java queries PostgreSQL → returns JSON → Python loads to Polars → manipulates → Python sends updated data to Java → Java updates PostgreSQL.
 
-All topic names are stored in lowercase and trimmed.
-
-This tool is ideal for tracking concept reviews (CS topics, math, coding patterns, etc.).
-
-📜 License
+##  License
 MIT — Free to use, modify, and distribute.

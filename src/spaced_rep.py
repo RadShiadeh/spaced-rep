@@ -18,16 +18,27 @@ def write_data(data: pl.DataFrame, path: str) -> None:
 
 
 def load_seen_and_rev():
+    """
+    parallel read and write of seen and revision dfs
+    args:
+        None
+    Returns:
+        None
+    """
     with ThreadPoolExecutor() as exc:
         seen_future = exc.submit(read_data, SEEN_PATH)
         rev_future = exc.submit(read_data, REVISIONS_PATH)
         wait([seen_future, rev_future])
         return seen_future.result(), rev_future.result()
 
-def grab_revision_list(date: str = None):
+def grab_revision_list(date: Optional[str] = None):
     """
     Prints the list of topics scheduled for revision, defults to today,
     along with their metadata from seen.json
+    args:
+        date: Optional[str]: grab for a given date, default to today
+    return:
+        None
     """
     
     try:
@@ -64,7 +75,7 @@ def grab_revision_list(date: str = None):
 
 def update_entry(topic: str, date_to_remove_from: str = None, reset_rate: int = 0):
     """
-    update an already existing topic
+    update an already existing topic within revision and seen dfs
 
     Args:
         topic (str): the topic to be updated
@@ -99,6 +110,22 @@ def update_entry(topic: str, date_to_remove_from: str = None, reset_rate: int = 
 
 
 def update_seen_concur(df_seen: pl.DataFrame, topic: str, reset_rate: int, date_to_remove_from: str):
+    """
+    Updates the 'df_seen' DataFrame for rows where the topic matches the given input.
+
+    This function updates the 'reset_idx' and 'date' columns for the specified topic.
+    It is designed to be called concurrently as part of the update_entry() workflow,
+    and encapsulates all write operations related to the 'seen' DataFrame.
+
+    Args:
+        df_seen (pl.DataFrame): The DataFrame containing seen topics.
+        topic (str): The topic to update (case-insensitive).
+        reset_rate (int): The new reset index to assign for the given topic.
+        date_to_remove_from (str): The new date to assign for the given topic.
+
+    Returns:
+        None: The function writes the updated DataFrame to SEEN_PATH.
+    """
     topic = topic.strip().lower()
     df_seen = df_seen.with_columns([
         pl.when(pl.col("topic") == topic)
@@ -118,9 +145,8 @@ def update_seen_concur(df_seen: pl.DataFrame, topic: str, reset_rate: int, date_
 def remove_topic_from_revs(df: pl.DataFrame, topic: str, date: str):
     """
     remove topic from date onwards in revisions
-
     Args:
-        data (dict): revision data
+        data (pl.Dataframe): revision data
         topic (str): string topic to be removed from date
         date (str): date key to start looking from
     returns:
@@ -141,7 +167,6 @@ def remove_topic_from_revs(df: pl.DataFrame, topic: str, date: str):
 def add_new_topic(topic: str, date: str = None, url: Optional[str] = "not_provided") -> None:
     """
     add new topic to the seen.json, update the revisions log
-
     Args:
         topic (str): the page/name/topic whatever to review
         date (str): date reviewed, in yyyy-MM-dd format
@@ -174,6 +199,22 @@ def add_new_topic(topic: str, date: str = None, url: Optional[str] = "not_provid
 
 
 def add_new_topic_seen_update(df_seen: pl.DataFrame, topic: str, date: str, url: str = "not provided"):
+    """
+    Adds a new topic entry to the 'df_seen' DataFrame and writes the updated DataFrame to disk.
+
+    This function creates a new row with the given topic, date, and optional URL,
+    initializes the reset index to 0, ensures the new row matches the existing schema,
+    and prepends it to the existing DataFrame. It then writes the updated DataFrame to SEEN_PATH.
+
+    Args:
+        df_seen (pl.DataFrame): The existing 'seen' DataFrame.
+        topic (str): The topic name to be added. It will be stripped and lowercased.
+        date (str): The associated date for the topic.
+        url (str, optional): An optional URL associated with the topic. Defaults to "not provided".
+
+    Raises:
+        Exception: Reraises any exception that occurs during processing or writing.
+    """
     try:
         topic = topic.strip().lower()
         
@@ -192,7 +233,7 @@ def update_revision(df: pl.DataFrame, topic: str, date: str, reset_idx: int = 0)
     add new revision entry to the revisions.json
 
     Args:
-        data (dict): json data
+        data (pl.DataFrame): revision df
         topic (str): topic being added
         date (str): date it would start at to calculate the revision days
         reset_idx (int): how much to reset
