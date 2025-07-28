@@ -1,9 +1,7 @@
 from datetime import datetime
-import os
 import polars as pl
 from src.spaced_rep import add_new_topic, update_entry, grab_revision_list
 from datetime import timedelta
-import sys
 
 # Setup test files
 SEEN_PATH = "./data/seen.csv"
